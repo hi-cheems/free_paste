@@ -15,7 +15,7 @@
 - `scripts/FreePaste-Release.app`
 - `scripts/FreePaste-Release.dmg`
 
-这是启用编译优化的 Release，包含 Apple Silicon 和 Intel 两种架构，不含 Debug 动态库，也不允许调试器连接。版本号沿用工程设置。沙盒、应用标识和签名团队保持不变，避免改变历史数据的存储位置。
+这是启用编译优化的 Release，包含 Apple Silicon 和 Intel 两种架构，不含 Debug 动态库，也不允许调试器连接。版本号沿用工程设置。Debug 和 Release 共用沙盒权限配置、应用标识和签名团队，使用同一个持久化数据目录。
 
 原有 `build-fixed-debug.sh`、`rebuild-and-run.sh` 继续用于 Debug 调试；新的 Release 入口不覆盖 Debug 产物，也不自动退出或启动应用。两个入口复用 `.deriveddata/` 缓存。
 
@@ -30,6 +30,8 @@ open scripts/FreePaste-Release.app
 ```
 
 换安装位置或签名身份后可能需要重新授权；安装包不包含用户的历史数据库。
+
+更早的非沙盒构建可能把历史保存在普通用户目录，而不是应用容器。新版本会只读迁入这些历史，保留收藏 Key、时间与完整内容，不覆盖新版本已有的记录；迁入成功后不会反复恢复已删除条目。不要删除容器或旧数据库来解决空列表问题。该迁移只访问旧 FreePaste 数据目录，权限范围见 [Apple 文件访问例外说明](https://developer.apple.com/library/archive/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html)。
 
 ## 对外发行
 

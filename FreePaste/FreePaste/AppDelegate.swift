@@ -103,11 +103,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     override init() {
-        let settings = AppSettings()
+        let settings = Self.isRunningUnitTests
+            ? AppSettings(defaults: UserDefaults(suiteName: "FreePaste.UnitTestHost")!)
+            : AppSettings()
         self.settings = settings
         self.manager = ClipboardManager(
             monitor: ClipboardMonitor(),
-            store: ClipboardHistoryStore(),
+            store: ClipboardHistoryStore(inMemory: Self.isRunningUnitTests),
             settings: settings
         )
         frontmostApplicationProvider = WorkspaceFrontmostApplicationProvider()
@@ -145,7 +147,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         super.init()
     }
 
+    static var isRunningUnitTests: Bool {
+        // The host can initialize before XCTest classes are loaded.
+        NSClassFromString("XCTestCase") != nil
+            || ProcessInfo.processInfo.environment.keys.contains {
+                $0.hasPrefix("XCTest") || $0 == "XCInjectBundleInto"
+            }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard !Self.isRunningUnitTests else { return }
         setupStatusItem()
         setupHistoryPanel()
         setupBatchPastePanel()

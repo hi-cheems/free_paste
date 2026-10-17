@@ -51,6 +51,8 @@ AppDelegate
 
 Store 使用代码构建 Core Data 模型，持久化到 Application Support 下的 SQLite；App Sandbox 环境由系统映射到容器。测试支持内存 Store。
 
+Debug 和 Release 共用 `Config/FreePaste.entitlements` 及相同应用标识，均使用沙盒存储。旧的非沙盒构建可能在真实用户目录 `~/Library/Application Support/FreePaste/` 留下数据库，因此首次升级不能只根据 Bundle ID 判断数据已共享：Store 通过 POSIX 用户信息定位真实主目录，避免 Foundation 在沙盒内仍返回容器路径，再将旧库只读复制到临时位置，完成必要的模型迁移后按记录 ID 合并到当前库，不覆盖当前记录、不删除旧库。图片外部载荷和 SQLite WAL 由 Core Data 一并复制；成功后写入一次性标记，避免再次导入用户已删除的记录，失败则保留原数据并允许重试。只读权限例外仅覆盖旧 FreePaste 数据目录，不允许写入旧库。
+
 持久化字段按职责分组：
 
 | 职责 | 字段 |

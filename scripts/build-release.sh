@@ -40,7 +40,7 @@ xcodebuild -quiet build -project "$ROOT_DIR/FreePaste/FreePaste.xcodeproj" \
   SWIFT_OPTIMIZATION_LEVEL=-O ENABLE_DEBUG_DYLIB=NO ENABLE_TESTABILITY=NO \
   ENABLE_HARDENED_RUNTIME=YES DEPLOYMENT_POSTPROCESSING=YES STRIP_INSTALLED_PRODUCT=YES \
   CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
-  "CODE_SIGN_ENTITLEMENTS=$ROOT_DIR/FreePaste/Config/Release.entitlements"
+  "CODE_SIGN_ENTITLEMENTS=$ROOT_DIR/FreePaste/Config/FreePaste.entitlements"
 
 ditto "$DERIVED_DATA_PATH/Build/Products/Release/FreePaste.app" "$WORK_DIR/FreePaste.app"
 codesign --verify --deep --strict "$WORK_DIR/FreePaste.app"

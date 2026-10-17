@@ -470,7 +470,7 @@ final class ClipboardHistoryStoreTests: XCTestCase {
         XCTAssertEqual(reopenedStore.fetchSnapshot().pinnedItems.first?.favoriteKey, "email")
     }
 
-    func test_preKeySQLiteStore_migratesAllContentAndFavoritesWithoutDataLoss() throws {
+    func test_preKeySQLiteStore_migratesAllContentAndFavoritesFromLegacyLocationWithoutDataLoss() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("FreePastePreKeyTests.\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -500,8 +500,11 @@ final class ClipboardHistoryStoreTests: XCTestCase {
         }
         try oldContainer.viewContext.save()
         try oldContainer.persistentStoreCoordinator.remove(try XCTUnwrap(oldContainer.persistentStoreCoordinator.persistentStores.first))
+        let originalBytes = try Data(contentsOf: url)
 
-        let migratedStore = ClipboardHistoryStore(storeURL: url)
+        let migratedStore = ClipboardHistoryStore(
+            storeURL: directory.appendingPathComponent("Sandbox.sqlite"), legacyStoreURL: url
+        )
 
         XCTAssertEqual(migratedStore.count, 3)
         XCTAssertEqual(Set(migratedStore.fetchSnapshot().pinnedItems.map(\.id)), Set([imageID, textID]))
@@ -512,6 +515,7 @@ final class ClipboardHistoryStoreTests: XCTestCase {
         XCTAssertEqual(migratedStore.searchPinned(query: "email").map(\.id), [textID])
         XCTAssertTrue(migratedStore.updateFavoriteKey(id: imageID, key: "image"))
         XCTAssertEqual(migratedStore.searchPinned(query: "IMAGE").map(\.id), [imageID])
+        XCTAssertEqual(try Data(contentsOf: url), originalBytes)
     }
 
     func test_unreadableDatabase_isNotDeletedOrOverwritten() throws {
@@ -595,6 +599,116 @@ final class ClipboardHistoryStoreTests: XCTestCase {
         let url = try ClipboardHistoryStore.defaultPersistentStoreURL()
 
         XCTAssertTrue(url.path.hasSuffix("/Library/Application Support/FreePaste/FreePaste.sqlite"))
+    }
+
+    func test_legacyLocationUpgrade_restoresHistoryFavoritesAndExternalPayloads() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FreePasteLocationTests.\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let legacyURL = directory.appendingPathComponent("Legacy.sqlite")
+        let destinationURL = directory.appendingPathComponent("Sandbox.sqlite")
+        let text = ClipboardItem(
+            timestamp: Date(timeIntervalSince1970: 100), content: .text("saved email"),
+            richData: ["public.rtf": Data(repeating: 0xCD, count: 1_048_576)]
+        )
+        let image = ClipboardItem(content: .image(Data(repeating: 0xAB, count: 2 * 1_048_576)))
+        let file = ClipboardItem(content: .fileURLs([URL(fileURLWithPath: "/tmp/saved.pdf")]))
+        autoreleasepool {
+            let legacy = ClipboardHistoryStore(storeURL: legacyURL)
+            for item in [text, image, file] { legacy.add(item, deduplicate: false) }
+            XCTAssertTrue(legacy.pin(id: text.id, key: "email"))
+        }
+        autoreleasepool { _ = ClipboardHistoryStore(storeURL: destinationURL) }
+        let originalBytes = try Data(contentsOf: legacyURL)
+
+        let upgraded = ClipboardHistoryStore(storeURL: destinationURL, legacyStoreURL: legacyURL)
+
+        XCTAssertEqual(upgraded.count, 3)
+        XCTAssertEqual(upgraded.fetch(id: text.id)?.timestamp, text.timestamp)
+        XCTAssertEqual(upgraded.fetch(id: text.id)?.richData, text.richData)
+        XCTAssertEqual(upgraded.searchPinned(query: "email").map(\.id), [text.id])
+        XCTAssertEqual(upgraded.fetch(id: image.id)?.content, image.content)
+        XCTAssertEqual(upgraded.fetch(id: file.id)?.content, file.content)
+        XCTAssertEqual(try Data(contentsOf: legacyURL), originalBytes)
+    }
+
+    func test_legacyLocationUpgrade_mergesWithoutReplacingNewerRecordsAndDoesNotResurrectDeletedItems() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FreePasteMergeTests.\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let legacyURL = directory.appendingPathComponent("Legacy.sqlite")
+        let destinationURL = directory.appendingPathComponent("Sandbox.sqlite")
+        let original = ClipboardItem(content: .text("original"))
+        let missing = ClipboardItem(content: .text("missing"))
+        let recent = ClipboardItem(content: .text("recent"))
+        autoreleasepool {
+            let legacy = ClipboardHistoryStore(storeURL: legacyURL)
+            legacy.add(original)
+            legacy.add(missing)
+            let destination = ClipboardHistoryStore(storeURL: destinationURL)
+            destination.add(ClipboardItem(id: original.id, content: .text("updated")))
+            destination.add(recent)
+        }
+        autoreleasepool {
+            let upgraded = ClipboardHistoryStore(storeURL: destinationURL, legacyStoreURL: legacyURL)
+            XCTAssertEqual(upgraded.count, 3)
+            XCTAssertEqual(upgraded.fetch(id: original.id)?.content, .text("updated"))
+            XCTAssertEqual(upgraded.fetch(id: recent.id)?.content, recent.content)
+            upgraded.delete(id: missing.id)
+        }
+
+        let reopened = ClipboardHistoryStore(storeURL: destinationURL, legacyStoreURL: legacyURL)
+
+        XCTAssertEqual(reopened.count, 2)
+        XCTAssertNil(reopened.fetch(id: missing.id))
+    }
+
+    func test_legacyLocationUpgrade_keepsCurrentHistoryWhenLegacyDatabaseIsInvalidAndRetriesLater() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FreePasteImportFailureTests.\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let legacyURL = directory.appendingPathComponent("Legacy.sqlite")
+        let destinationURL = directory.appendingPathComponent("Sandbox.sqlite")
+        let originalBytes = Data("not a database".utf8)
+        try originalBytes.write(to: legacyURL)
+        let recent = ClipboardItem(content: .text("recent"))
+        autoreleasepool {
+            let destination = ClipboardHistoryStore(storeURL: destinationURL)
+            destination.add(recent)
+        }
+        autoreleasepool {
+            let upgraded = ClipboardHistoryStore(storeURL: destinationURL, legacyStoreURL: legacyURL)
+            XCTAssertEqual(upgraded.fetch(id: recent.id)?.content, recent.content)
+            XCTAssertEqual(try? Data(contentsOf: legacyURL), originalBytes)
+        }
+        try FileManager.default.removeItem(at: legacyURL)
+        let missing = ClipboardItem(content: .text("missing"))
+        autoreleasepool { _ = ClipboardHistoryStore(storeURL: legacyURL).add(missing) }
+
+        let retried = ClipboardHistoryStore(storeURL: destinationURL, legacyStoreURL: legacyURL)
+
+        XCTAssertEqual(retried.count, 2)
+        XCTAssertEqual(retried.fetch(id: missing.id)?.content, missing.content)
+    }
+
+    func test_legacyLocationUpgrade_doesNotImportIntoMemoryOrSameLocation() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FreePasteImportIsolationTests.\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let legacyURL = directory.appendingPathComponent("Legacy.sqlite")
+        let item = ClipboardItem(content: .text("saved"))
+        autoreleasepool { _ = ClipboardHistoryStore(storeURL: legacyURL).add(item) }
+
+        let memoryStore = ClipboardHistoryStore(inMemory: true, legacyStoreURL: legacyURL)
+        let sameLocation = ClipboardHistoryStore(storeURL: legacyURL, legacyStoreURL: legacyURL)
+
+        XCTAssertEqual(memoryStore.count, 0)
+        XCTAssertEqual(sameLocation.count, 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: legacyURL.appendingPathExtension("legacy-imported").path))
     }
 
     // MARK: - 收藏功能

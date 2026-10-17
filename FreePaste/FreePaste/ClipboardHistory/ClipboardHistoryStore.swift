@@ -6,6 +6,7 @@
 //
 
 import CoreData
+import Darwin
 import Foundation
 
 struct ClipboardHistorySnapshot {
@@ -157,7 +158,7 @@ final class ClipboardHistoryStore {
 
     // MARK: - Initialization
 
-    init(inMemory: Bool = false, storeURL: URL? = nil) {
+    init(inMemory: Bool = false, storeURL: URL? = nil, legacyStoreURL: URL? = nil) {
         container = NSPersistentContainer(
             name: "FreePaste",
             managedObjectModel: Self.model
@@ -215,6 +216,15 @@ final class ClipboardHistoryStore {
         context.undoManager = nil
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         context.automaticallyMergesChangesFromParent = true
+
+        if !inMemory,
+           let sourceURL = legacyStoreURL ?? (storeURL == nil ? Self.legacyPersistentStoreURL() : nil) {
+            do {
+                try importLegacyHistoryIfNeeded(from: sourceURL)
+            } catch {
+                print("FreePaste: 旧目录历史迁移失败，保留原数据并在下次启动重试：\(error)")
+            }
+        }
     }
 
     // MARK: - Writes
@@ -861,6 +871,55 @@ final class ClipboardHistoryStore {
             at: url, destinationOptions: nil, withPersistentStoreFrom: migratedURL,
             sourceOptions: nil, ofType: NSSQLiteStoreType
         )
+    }
+
+    private func importLegacyHistoryIfNeeded(from sourceURL: URL) throws {
+        guard let destinationURL = persistentStoreURL,
+              container.persistentStoreCoordinator.persistentStores.first?.type == NSSQLiteStoreType,
+              sourceURL.resolvingSymlinksInPath() != destinationURL.resolvingSymlinksInPath()
+        else { return }
+        let fileManager = FileManager.default
+        let markerURL = destinationURL.appendingPathExtension("legacy-imported")
+        guard !fileManager.fileExists(atPath: markerURL.path),
+              fileManager.fileExists(atPath: sourceURL.path) else { return }
+
+        let stagingDirectory = destinationURL.deletingLastPathComponent()
+            .appendingPathComponent(".FreePasteLegacyImport-\(UUID().uuidString)", isDirectory: true)
+        try fileManager.createDirectory(at: stagingDirectory, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: stagingDirectory) }
+        let stagingURL = stagingDirectory.appendingPathComponent("FreePaste.sqlite")
+
+        // Core Data copies the WAL and external payloads consistently; never migrate the original in place.
+        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: Self.model)
+        try coordinator.replacePersistentStore(
+            at: stagingURL, destinationOptions: nil, withPersistentStoreFrom: sourceURL,
+            sourceOptions: [NSReadOnlyPersistentStoreOption: true], ofType: NSSQLiteStoreType
+        )
+        let legacyStore = ClipboardHistoryStore(storeURL: stagingURL)
+        guard legacyStore.container.persistentStoreCoordinator.persistentStores.first?.type == NSSQLiteStoreType
+        else { throw CocoaError(.fileReadCorruptFile) }
+
+        let legacyItems = legacyStore.fetchSnapshot().items
+        guard !legacyItems.isEmpty else { return }
+        let existingIDs = Set(fetchSnapshot().items.map(\.id))
+        for summary in legacyItems where !existingIDs.contains(summary.id) {
+            try autoreleasepool {
+                guard let item = legacyStore.fetch(id: summary.id) else {
+                    throw CocoaError(.fileReadCorruptFile)
+                }
+                add(item, deduplicate: false)
+                guard fetch(id: item.id) != nil else { throw CocoaError(.fileWriteUnknown) }
+            }
+        }
+        try Data().write(to: markerURL, options: .atomic)
+    }
+
+    private static func legacyPersistentStoreURL() -> URL? {
+        // Foundation's home-directory helpers can resolve to the container, even for the current username.
+        guard let homePath = getpwuid(getuid())?.pointee.pw_dir else { return nil }
+        let home = String(cString: homePath)
+        return URL(fileURLWithPath: home, isDirectory: true)
+            .appendingPathComponent("Library/Application Support/FreePaste/FreePaste.sqlite")
     }
 
     static func defaultPersistentStoreURL(

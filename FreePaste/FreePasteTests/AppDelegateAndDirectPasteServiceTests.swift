@@ -13,6 +13,18 @@ import XCTest
 
 final class AppDelegateAndDirectPasteServiceTests: XCTestCase {
 
+    func test_unitTestHost_usesEmptyIsolatedHistoryAndSkipsApplicationStartup() async {
+        await MainActor.run {
+            XCTAssertTrue(AppDelegate.isRunningUnitTests)
+            let delegate = AppDelegate()
+            delegate.applicationDidFinishLaunching(
+                Notification(name: NSApplication.didFinishLaunchingNotification)
+            )
+            XCTAssertTrue(delegate.manager.items.isEmpty)
+            XCTAssertTrue(delegate.manager.pinnedItems.isEmpty)
+        }
+    }
+
     func test_captureRestoreTargetApplication_usesFrontmostNonSelfApp() async {
         await MainActor.run {
             let frontmostApp = MockRunningApplication(
