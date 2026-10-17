@@ -11,11 +11,14 @@ FreePaste 是单一 .app，可打包为拖拽安装的 DMG，无需第三方工�
 
 **包装不等于公开发行。** 当前内层应用是 Apple Development 签名的 Debug、包含调试 entitlement；没有执行外层 DMG 分发签名或 Apple 公证。公开发布需合格的 Developer ID 签名和公证流程，不能仅换扩展名或配置名。[Apple：分发签名][distribution]；[Apple：公证要求][notarizing]
 
+以上指原 `build-fixed-debug.sh` 默认产物。2026-10-17 新增 `build-release.sh` 用于构建优化后的自用 Release；当前未执行 Developer ID 签名或公证。操作入口见 [Release 构建](releasing.md)，下文早期签名快照不代表 Release 产物。
+
 ## 当前实现
 
 | 脚本 | 行为 |
 | --- | --- |
 | [build-fixed-debug.sh](../scripts/build-fixed-debug.sh) | 从本地覆盖或命令行取得签名团队，Xcode Debug 构建后发布 `scripts/FreePaste.app`，验证签名与配置一致，再调用包装脚本 |
+| [build-release.sh](../scripts/build-release.sh) | 构建优化的 Universal Release，保留 Debug 产物，生成独立的 Release App 与 DMG |
 | [package-dmg.sh](../scripts/package-dmg.sh) | 单独包装已有签名应用，默认生成脚本同级 `FreePaste.dmg`，支持自定义输入 / 输出路径 |
 | [rebuild-and-run.sh](../scripts/rebuild-and-run.sh) | 退出旧应用、重建 .app 和 DMG，仍从固定 .app 路径启动，不挂载镜像 |
 

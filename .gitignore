@@ -17,6 +17,7 @@ build/
 *.app/
 *.dmg
 scripts/.FreePaste-dmg.*/
+scripts/.FreePaste-release.*/
 *.xcarchive/
 *.xcresult/
 *.dSYM/

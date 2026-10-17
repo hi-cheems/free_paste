@@ -10,6 +10,7 @@
 | [项目说明](project-notes.md) | 产品现状、日常操作、搜索与批量粘贴的行为边界 |
 | [架构说明](architecture.md) | 模块、数据流、存储迁移、性能设计和代码阅读入口 |
 | [开发、安装与验证](development-workflow.md) | 构建、测试、DMG 安装、签名与常见阻塞 |
+| [Release 构建](releasing.md) | Release 构建、切换使用与以后对外发行的边界 |
 | [隐私功能说明](privacy-notes.md) | 已实现的来源过滤、暂停和清理，以及尚未实现的候选能力 |
 | [后续方向](next-steps-roadmap.md) | 稳定性维护与待评估方向，不是实现承诺 |
 | [DMG 打包调研](dmg-packaging-research.md) | Apple 第一手依据、当前打包实现和公开分发限制 |

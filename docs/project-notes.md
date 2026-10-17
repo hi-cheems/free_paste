@@ -187,6 +187,8 @@ FreePaste 是一个面向普通用户的 macOS 菜单栏剪贴板历史工具，
 
 当前产物是 Apple Development 签名的 Debug、实测架构 arm64，不是已公证的公开发行版。公开分发的签名、公证和验证边界见 [DMG 调研](dmg-packaging-research.md)。
 
+新增 `build-release.sh` 入口，生成单独的 Universal 自用 Release，沿用开发签名，未做公证；原 Debug 入口不变。构建与使用见 [Release 构建](releasing.md)。
+
 发布方向：
 
 - 当前适合继续打磨本地单机体验

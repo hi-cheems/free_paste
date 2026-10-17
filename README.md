@@ -44,7 +44,7 @@ FreePaste 是一个 macOS 原生菜单栏剪贴板工具，支持文本、图片
 
 ## 从源码构建
 
-需要完整的 Xcode 和 macOS SDK，不需要安装第三方库或额外的 DMG 打包工具。开发验证环境为 Xcode 26.3，当前仅验证过 Apple Silicon；脚本按本机架构构建，不生成 Universal 应用。
+需要完整的 Xcode 和 macOS SDK，不需要安装第三方库或额外的 DMG 打包工具。开发验证环境为 Xcode 26.3，当前实机验证为 Apple Silicon；Debug 按本机架构构建，新增 Release 入口默认构建 Universal 应用。
 
 下载或克隆项目后，在项目根目录执行下面的命令。
 
@@ -68,6 +68,16 @@ DEVELOPMENT_TEAM = YOUR_TEAM_ID
 
 ### 2. 编译并生成安装包
 
+自用推荐构建优化后的 Release：
+
+```bash
+./scripts/build-release.sh
+```
+
+生成 `scripts/FreePaste-Release.app` 和 `scripts/FreePaste-Release.dmg`，不覆盖旧 Debug 产物。当前仍沿用本机开发签名，未执行 Apple 公证。
+
+需要调试时使用原入口：
+
 ```bash
 ./scripts/build-fixed-debug.sh
 ```
@@ -81,15 +91,15 @@ DEVELOPMENT_TEAM = YOUR_TEAM_ID
 
 ### 3. 启动或安装
 
-直接运行开发产物：
+退出旧应用后，直接运行 Release：
 
 ```bash
-open scripts/FreePaste.app
+open scripts/FreePaste-Release.app
 ```
 
-也可退出旧应用，打开 `scripts/FreePaste.dmg`，将应用拖到 Applications，推出镜像后从 Applications 启动。不要同时运行开发目录和 Applications 中的两个副本。
+也可退出旧应用，打开 `scripts/FreePaste-Release.dmg`，将应用拖到 Applications，推出镜像后从 Applications 启动。不要同时运行开发目录和 Applications 中的两个副本。
 
-当前脚本生成 Apple Development 签名的 Debug 包，不是经过 Developer ID 签名和 Apple 公证的公开发行版。公开分发需要单独准备发布构建、签名和公证，详见[开发、安装与验证](docs/development-workflow.md)。
+Release 构建与以后对外发行的区别见 [Release 构建](docs/releasing.md)。需要调试时仍使用原 Debug 入口。
 
 ## 运行测试
 
@@ -115,6 +125,7 @@ xcodebuild test \
 - [项目说明与功能边界](docs/project-notes.md)
 - [架构说明](docs/architecture.md)
 - [开发、安装与验证](docs/development-workflow.md)
+- [Release 构建与首次发行](docs/releasing.md)
 - [隐私功能说明](docs/privacy-notes.md)
 
 ## 许可证

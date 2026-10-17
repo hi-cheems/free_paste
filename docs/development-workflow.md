@@ -12,6 +12,8 @@
 - DMG 使用系统自带的 `hdiutil` 打包，不需要 Homebrew 或第三方打包工具。
 - 当前是 Apple Development 签名的 Debug 安装包，不是经过 Developer ID 签名、公证的公开发行版。DMG 不会自动改变这一点。
 
+上述是原 Debug 入口的行为。现已新增 `./scripts/build-release.sh`，生成独立的优化 Release：`scripts/FreePaste-Release.app` 和 `scripts/FreePaste-Release.dmg`，不替换 Debug。构建与切换使用见 [Release 构建](releasing.md)。`rebuild-and-run.sh` 仍是原 Debug 调试入口，不会自动切换或安装 Release。
+
 构建与测试请复用上述两个固定缓存目录，不要为每轮验证创建新的 `.deriveddata-*` 目录。旧的独立构建目录可在确认没有相关编译、测试或应用运行后删除；其中的中间文件、模块缓存和索引可以重新生成，不需要删除源码、签名配置或 `scripts/` 中的安装包。
 
 ## 本机签名配置
