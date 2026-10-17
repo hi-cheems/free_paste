@@ -451,6 +451,35 @@ final class ClipboardHistoryNavigationTests: XCTestCase {
         }
     }
 
+    func test_customPreviewShortcut_replacesSpaceAndStillRespectsDetailedSearch() throws {
+        let settings = makeRoutingSettings()
+        let combinations: [(Int, NSEvent.ModifierFlags)] = [
+            (kVK_ANSI_P, [.command, .option]),
+            (kVK_Space, [.control, .shift]),
+        ]
+        for (keyCode, modifiers) in combinations {
+            settings.previewShortcut = FreePaste.KeyboardShortcut(keyCode: UInt16(keyCode), modifierFlags: modifiers)
+            let event = try keyEvent(keyCode, modifiers: modifiers)
+
+            XCTAssertEqual(ClipboardHistoryKeyAction.resolve(event, isEditingSearch: false, settings: settings), .preview)
+            XCTAssertNil(ClipboardHistoryKeyAction.resolve(event, isEditingSearch: true, settings: settings))
+            XCTAssertNil(ClipboardHistoryKeyAction.resolve(try keyEvent(kVK_Space), isEditingSearch: false, settings: settings))
+        }
+        XCTAssertNil(ClipboardHistoryKeyAction.resolve(try keyEvent(kVK_Space, modifiers: .control), isEditingSearch: false, settings: settings))
+    }
+
+    func test_previewShortcutRecorder_acceptsSpaceAndModifierCombinations() throws {
+        let shortcuts: [(Int, NSEvent.ModifierFlags)] = [
+            (kVK_Space, []), (kVK_ANSI_P, [.command, .option]), (kVK_Space, [.control, .shift]),
+        ]
+        for (keyCode, modifiers) in shortcuts {
+            XCTAssertEqual(
+                FreePaste.KeyboardShortcut.from(event: try keyEvent(keyCode, modifiers: modifiers)),
+                FreePaste.KeyboardShortcut(keyCode: UInt16(keyCode), modifierFlags: modifiers)
+            )
+        }
+    }
+
     func test_spacePreview_returnsAfterExitingDetailedSearch() throws {
         let settings = makeRoutingSettings()
         let space = try keyEvent(kVK_Space)

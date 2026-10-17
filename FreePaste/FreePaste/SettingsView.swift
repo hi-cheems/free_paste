@@ -211,6 +211,13 @@ struct SettingsView: View {
                     conflictChecker: { settings.conflictingActionName(for: $0, excludingName: "粘贴为纯文本") }
                 ) { settings.plainTextPasteShortcut = $0 }
 
+                ShortcutRecorderRow(
+                    title: "预览/关闭预览",
+                    shortcut: settings.previewShortcut,
+                    defaultLabel: KeyboardShortcut.defaultPreview.displayText,
+                    conflictChecker: { settings.conflictingActionName(for: $0, excludingName: "预览/关闭预览") }
+                ) { settings.previewShortcut = $0 }
+
                 Button("恢复默认快捷键") {
                     settings.restoreDefaultShortcuts()
                 }

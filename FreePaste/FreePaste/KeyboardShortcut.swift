@@ -86,12 +86,14 @@ struct KeyboardShortcut: Codable, Equatable {
         keyCode: UInt16(kVK_Return),
         modifierFlags: .shift
     )
+    static let defaultPreview = KeyboardShortcut(keyCode: UInt16(kVK_Space))
 
     private static let specialKeyCodes: Set<UInt16> = [
         UInt16(kVK_Delete),
         UInt16(kVK_ForwardDelete),
         UInt16(kVK_Return),
         UInt16(kVK_Tab),
+        UInt16(kVK_Space),
         UInt16(kVK_ANSI_KeypadEnter),
         UInt16(kVK_UpArrow),
         UInt16(kVK_DownArrow),

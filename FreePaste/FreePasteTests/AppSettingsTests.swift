@@ -52,6 +52,7 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(settings.switchPanelShortcut, .defaultSwitchPanel)
         XCTAssertEqual(settings.togglePinShortcut, .defaultTogglePin)
         XCTAssertEqual(settings.plainTextPasteShortcut, .defaultPlainTextPaste)
+        XCTAssertEqual(settings.previewShortcut, KeyboardShortcut(keyCode: UInt16(kVK_Space)))
         XCTAssertEqual(settings.batchPasteStartShortcut, .defaultBatchPasteStart)
         XCTAssertEqual(settings.batchPasteDirection, .forward)
         XCTAssertEqual(
@@ -227,6 +228,7 @@ final class AppSettingsTests: XCTestCase {
         settings.switchPanelShortcut = KeyboardShortcut(keyCode: 48, modifierFlags: .option)
         settings.batchPasteStartShortcut = KeyboardShortcut(keyCode: 8, modifierFlags: [.command, .option])
         settings.batchPasteDirection = .reverse
+        settings.previewShortcut = KeyboardShortcut(keyCode: UInt16(kVK_ANSI_P), modifierFlags: [.command, .option])
 
         let reloaded = AppSettings(
             defaults: defaults,
@@ -249,6 +251,10 @@ final class AppSettingsTests: XCTestCase {
             KeyboardShortcut(keyCode: 8, modifierFlags: [.command, .option])
         )
         XCTAssertEqual(reloaded.batchPasteDirection, .reverse)
+        XCTAssertEqual(
+            reloaded.previewShortcut,
+            KeyboardShortcut(keyCode: UInt16(kVK_ANSI_P), modifierFlags: [.command, .option])
+        )
     }
 
     func test_init_migratesLegacyPlainTextPasteShortcutToShiftReturn() throws {
@@ -351,6 +357,7 @@ final class AppSettingsTests: XCTestCase {
             keyCode: UInt16(kVK_Return),
             modifierFlags: .option
         )
+        settings.previewShortcut = KeyboardShortcut(keyCode: UInt16(kVK_ANSI_P), modifierFlags: [.control, .shift])
 
         settings.restoreDefaultShortcuts()
 
@@ -360,6 +367,37 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(settings.focusSearchShortcut, .defaultFocusSearch)
         XCTAssertEqual(settings.batchPasteStartShortcut, .defaultBatchPasteStart)
         XCTAssertEqual(settings.plainTextPasteShortcut, .defaultPlainTextPaste)
+        XCTAssertEqual(settings.previewShortcut, .defaultPreview)
+        XCTAssertEqual(
+            AppSettings(defaults: defaults, launchAtLoginController: launchAtLoginController).previewShortcut,
+            .defaultPreview
+        )
+    }
+
+    func test_previewShortcut_conflictsWithOtherActionsButNotItself() {
+        let settings = AppSettings(defaults: defaults, launchAtLoginController: launchAtLoginController)
+        XCTAssertEqual(settings.conflictingActionName(for: .defaultPreview, excludingName: "下一项"), "预览/关闭预览")
+        XCTAssertNil(settings.conflictingActionName(for: .defaultPreview, excludingName: "预览/关闭预览"))
+
+        let custom = KeyboardShortcut(keyCode: UInt16(kVK_ANSI_P), modifierFlags: [.command, .option])
+        settings.previewShortcut = custom
+
+        XCTAssertEqual(settings.conflictingActionName(for: custom, excludingName: "聚焦搜索栏"), "预览/关闭预览")
+        XCTAssertNil(settings.conflictingActionName(for: custom, excludingName: "预览/关闭预览"))
+        XCTAssertNil(settings.conflictingActionName(for: .defaultPreview, excludingName: "下一项"))
+        XCTAssertEqual(settings.conflictingActionName(for: settings.nextItemShortcut, excludingName: "预览/关闭预览"), "下一项")
+        XCTAssertEqual(settings.conflictingActionName(for: .defaultFocusSearch, excludingName: "预览/关闭预览"), "聚焦搜索栏")
+    }
+
+    func test_previewShortcut_invalidSavedValueFallsBackWithoutChangingOtherBindings() throws {
+        let customNext = KeyboardShortcut(keyCode: UInt16(kVK_ANSI_J), modifierFlags: .control)
+        defaults.set(try JSONEncoder().encode(customNext), forKey: AppSettings.Keys.nextItemShortcut)
+        defaults.set(Data([0xFF]), forKey: AppSettings.Keys.previewShortcut)
+
+        let settings = AppSettings(defaults: defaults, launchAtLoginController: launchAtLoginController)
+
+        XCTAssertEqual(settings.previewShortcut, .defaultPreview)
+        XCTAssertEqual(settings.nextItemShortcut, customNext)
     }
 
     func test_visibleHistoryItemCount_isClampedToSupportedRange() {

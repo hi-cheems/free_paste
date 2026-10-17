@@ -33,7 +33,7 @@ enum ClipboardHistoryKeyAction: Equatable {
         if KeyboardShortcut(keyCode: UInt16(kVK_Delete)).matches(event) { return nil }
         if settings.deleteSelectedItemShortcut.matches(event) { return .deleteItem }
         if settings.plainTextPasteShortcut.matches(event) { return .pastePlainText }
-        if KeyboardShortcut(keyCode: UInt16(kVK_Space)).matches(event) { return .preview }
+        if settings.previewShortcut.matches(event) { return .preview }
 
         switch Int(event.keyCode) {
         case kVK_RightArrow, kVK_DownArrow:

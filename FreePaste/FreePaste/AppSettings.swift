@@ -37,6 +37,7 @@ final class AppSettings: ObservableObject {
         static let switchPanelShortcut = "settings.shortcuts.switchPanel"
         static let togglePinShortcut = "settings.shortcuts.togglePin"
         static let plainTextPasteShortcut = "settings.shortcuts.plainTextPaste"
+        static let previewShortcut = "settings.shortcuts.preview"
         static let navigationControlFBMigration = "settings.migrations.navigationControlFB"
         static let plainTextPasteShiftReturnMigration = "settings.migrations.plainTextPasteShiftReturn"
         static let searchCommandFMigration = "settings.migrations.searchCommandF"
@@ -158,6 +159,9 @@ final class AppSettings: ObservableObject {
     @Published var plainTextPasteShortcut: KeyboardShortcut {
         didSet { saveShortcut(plainTextPasteShortcut, forKey: Keys.plainTextPasteShortcut) }
     }
+    @Published var previewShortcut: KeyboardShortcut {
+        didSet { saveShortcut(previewShortcut, forKey: Keys.previewShortcut) }
+    }
 
     private let defaults: UserDefaults
     private let launchAtLoginController: any LaunchAtLoginControlling
@@ -242,6 +246,11 @@ final class AppSettings: ObservableObject {
             fallback: .defaultTogglePin
         )
         self.plainTextPasteShortcut = Self.loadPlainTextPasteShortcut(from: defaults)
+        self.previewShortcut = Self.loadShortcut(
+            from: defaults,
+            key: Keys.previewShortcut,
+            fallback: .defaultPreview
+        )
         scheduleRecordingPauseExpiryTimer()
     }
 
@@ -335,6 +344,7 @@ final class AppSettings: ObservableObject {
             ("聚焦搜索栏", focusSearchShortcut),
             ("收藏/取消收藏", togglePinShortcut),
             ("粘贴为纯文本", plainTextPasteShortcut),
+            ("预览/关闭预览", previewShortcut),
         ]
         let reservedBatchPasteShortcut = KeyboardShortcut(
             keyCode: UInt16(kVK_ANSI_V),
@@ -356,6 +366,7 @@ final class AppSettings: ObservableObject {
         switchPanelShortcut = .defaultSwitchPanel
         togglePinShortcut = .defaultTogglePin
         plainTextPasteShortcut = .defaultPlainTextPaste
+        previewShortcut = .defaultPreview
     }
 
     private func saveShortcut(_ shortcut: KeyboardShortcut, forKey key: String) {
