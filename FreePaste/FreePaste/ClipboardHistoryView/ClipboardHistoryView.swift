@@ -478,6 +478,9 @@ struct ClipboardHistoryView: View {
             return handlePlainTextConfirm()
         case .paste:
             return handleConfirm()
+        case .preview:
+            if !event.isARepeat { previewSelection() }
+            return true
         case nil:
             return false
         }
@@ -581,6 +584,14 @@ struct ClipboardHistoryView: View {
         else { return false }
         confirmSelection(item)
         return true
+    }
+
+    private func previewSelection() {
+        guard
+            let selectedID = navigation.confirmedItemID(in: displayedItems.map(\.id)),
+            let item = displayedItems.first(where: { $0.id == selectedID })
+        else { return }
+        onPreview(item)
     }
 
     private func handleDeleteSelection() -> Bool {

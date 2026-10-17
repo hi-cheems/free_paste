@@ -419,7 +419,7 @@ final class ClipboardHistoryNavigationTests: XCTestCase {
         for (key, modifiers) in previousKeys {
             XCTAssertEqual(ClipboardHistoryKeyAction.resolve(try keyEvent(key, modifiers: modifiers), isEditingSearch: false, settings: settings), .previousItem)
         }
-        for key in [kVK_ANSI_E, kVK_Space, kVK_Delete, kVK_ANSI_Slash] {
+        for key in [kVK_ANSI_E, kVK_Delete, kVK_ANSI_Slash] {
             XCTAssertNil(ClipboardHistoryKeyAction.resolve(try keyEvent(key), isEditingSearch: false, settings: settings))
         }
         XCTAssertEqual(ClipboardHistoryKeyAction.resolve(try keyEvent(kVK_Return), isEditingSearch: false, settings: settings), .paste)
@@ -427,12 +427,51 @@ final class ClipboardHistoryNavigationTests: XCTestCase {
         XCTAssertEqual(ClipboardHistoryKeyAction.resolve(try keyEvent(kVK_Delete, modifiers: .command), isEditingSearch: false, settings: settings), .deleteItem)
     }
 
+    func test_quickSearch_spacePreviewsSelectedItemInHistoryAndFavorites() throws {
+        let settings = makeRoutingSettings()
+        let space = try keyEvent(kVK_Space)
+        var navigation = ClipboardHistoryNavigation<Int>()
+        navigation.prepareForPresentation(itemIDs: [1, 2])
+
+        XCTAssertEqual(ClipboardHistoryKeyAction.resolve(space, isEditingSearch: false, settings: settings), .preview)
+        XCTAssertEqual(navigation.confirmedItemID(in: [1, 2]), 1)
+
+        _ = navigation.switchPanel(recentIDs: [1, 2], favoriteIDs: [10, 20])
+
+        XCTAssertEqual(ClipboardHistoryKeyAction.resolve(space, isEditingSearch: navigation.searchMode == .editing, settings: settings), .preview)
+        XCTAssertEqual(navigation.confirmedItemID(in: [10, 20]), 10)
+    }
+
+    func test_quickSearch_modifiedSpaceStaysWithNativeInput() throws {
+        let settings = makeRoutingSettings()
+        for modifiers: NSEvent.ModifierFlags in [.shift, .option, .control, .command] {
+            XCTAssertNil(ClipboardHistoryKeyAction.resolve(
+                try keyEvent(kVK_Space, modifiers: modifiers), isEditingSearch: false, settings: settings
+            ))
+        }
+    }
+
+    func test_spacePreview_returnsAfterExitingDetailedSearch() throws {
+        let settings = makeRoutingSettings()
+        let space = try keyEvent(kVK_Space)
+        var navigation = ClipboardHistoryNavigation<Int>()
+        navigation.prepareForPresentation(itemIDs: [1, 2])
+        navigation.beginEditingSearch()
+
+        XCTAssertNil(ClipboardHistoryKeyAction.resolve(space, isEditingSearch: true, settings: settings))
+
+        navigation.exitSearch(itemIDs: [1, 2])
+
+        XCTAssertEqual(ClipboardHistoryKeyAction.resolve(space, isEditingSearch: navigation.searchMode == .editing, settings: settings), .preview)
+        XCTAssertEqual(navigation.selectedItemID, 1)
+    }
+
     func test_detailedSearch_keepsAllListShortcutsWithNativeTextEditorUntilEscape() throws {
         let settings = makeRoutingSettings()
         let keys: [(Int, NSEvent.ModifierFlags)] = [
             (kVK_LeftArrow, []), (kVK_RightArrow, []), (kVK_UpArrow, []), (kVK_DownArrow, []),
             (kVK_ANSI_F, .control), (kVK_ANSI_B, .control), (kVK_Tab, []),
-            (kVK_Return, []), (kVK_Return, .shift), (kVK_Delete, .command),
+            (kVK_Return, []), (kVK_Return, .shift), (kVK_Delete, .command), (kVK_Space, []),
             (kVK_ANSI_D, .command), (kVK_ANSI_A, .command), (kVK_ANSI_C, .command),
             (kVK_ANSI_V, .command), (kVK_ANSI_Z, .command), (kVK_ANSI_F, .command),
         ]
