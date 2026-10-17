@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">FreePaste architecture overview</title>
+  <desc id="desc">Architecture diagram for the FreePaste macOS clipboard history application.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7fbff"/>
+      <stop offset="0.46" stop-color="#eef7f2"/>
+      <stop offset="1" stop-color="#fff7ed"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0f172a" flood-opacity="0.14"/>
+    </filter>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#0f766e"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#c2410c"/>
+    </marker>
+    <style>
+      .page { fill: url(#bg); }
+      .title { font: 800 54px -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Noto Sans CJK SC", sans-serif; fill: #102033; }
+      .subtitle { font: 400 24px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif; fill: #475569; }
+      .section-title { font: 800 25px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif; fill: #172033; }
+      .label { font: 700 26px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif; fill: #111827; }
+      .body { font: 400 20px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif; fill: #334155; }
+      .small { font: 500 17px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif; fill: #475569; }
+      .chip { font: 700 15px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif; fill: #1f2937; }
+      .card { stroke-width: 2; filter: url(#shadow); }
+      .soft { stroke-width: 1.5; }
+      .arrow-blue { fill: none; stroke: #2563eb; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow-blue); }
+      .arrow-green { fill: none; stroke: #0f766e; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow-green); }
+      .arrow-orange { fill: none; stroke: #c2410c; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow-orange); }
+      .thin-blue { fill: none; stroke: #60a5fa; stroke-width: 3; stroke-dasharray: 8 10; stroke-linecap: round; marker-end: url(#arrow-blue); }
+      .thin-orange { fill: none; stroke: #fb923c; stroke-width: 3; stroke-dasharray: 8 10; stroke-linecap: round; marker-end: url(#arrow-orange); }
+    </style>
+  </defs>
+
+  <rect class="page" width="1600" height="1000"/>
+  <circle cx="1450" cy="110" r="150" fill="#d9f99d" opacity="0.35"/>
+  <circle cx="120" cy="890" r="180" fill="#bfdbfe" opacity="0.32"/>
+
+  <text class="title" x="96" y="92">FreePaste 架构总览</text>
+  <text class="subtitle" x="98" y="133">macOS 菜单栏剪贴板历史工具：监听、持久化、搜索、预览，并直接粘贴回原应用</text>
+
+  <rect x="82" y="170" width="1436" height="748" rx="32" fill="#ffffff" opacity="0.78" stroke="#dbe5ef"/>
+  <text class="section-title" x="120" y="218">系统边界</text>
+
+  <g>
+    <rect class="card" x="112" y="260" width="300" height="210" rx="20" fill="#eef6ff" stroke="#93c5fd"/>
+    <text class="label" x="142" y="314">macOS 系统</text>
+    <text class="body" x="142" y="358">NSPasteboard</text>
+    <text class="body" x="142" y="392">前台应用</text>
+    <text class="body" x="142" y="426">Accessibility 事件</text>
+    <rect x="142" y="278" width="54" height="6" rx="3" fill="#2563eb"/>
+  </g>
+
+  <g>
+    <rect class="card" x="112" y="558" width="300" height="214" rx="20" fill="#fff7ed" stroke="#fdba74"/>
+    <text class="label" x="142" y="612">用户操作</text>
+    <text class="body" x="142" y="656">全局快捷键</text>
+    <text class="body" x="142" y="690">搜索 / 收藏 / 删除</text>
+    <text class="body" x="142" y="724">Return 直接粘贴</text>
+    <rect x="142" y="576" width="54" height="6" rx="3" fill="#ea580c"/>
+  </g>
+
+  <g>
+    <rect class="card" x="492" y="250" width="335" height="245" rx="22" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text class="label" x="526" y="306">App Shell</text>
+    <text class="body" x="526" y="350">FreePasteApp</text>
+    <text class="body" x="526" y="384">AppDelegate</text>
+    <text class="body" x="526" y="418">NSStatusItem / NSPopover</text>
+    <text class="small" x="526" y="456">菜单栏、设置窗口、预览面板、快捷键</text>
+    <rect x="526" y="268" width="54" height="6" rx="3" fill="#64748b"/>
+  </g>
+
+  <g>
+    <rect class="card" x="492" y="590" width="335" height="190" rx="22" fill="#ecfdf5" stroke="#86efac"/>
+    <text class="label" x="526" y="646">ClipboardMonitor</text>
+    <text class="body" x="526" y="690">轮询 changeCount</text>
+    <text class="body" x="526" y="724">产出 ClipboardItem 事件</text>
+    <rect x="526" y="608" width="54" height="6" rx="3" fill="#16a34a"/>
+  </g>
+
+  <g>
+    <rect class="card" x="902" y="382" width="335" height="235" rx="22" fill="#f0f9ff" stroke="#7dd3fc"/>
+    <text class="label" x="936" y="438">ClipboardManager</text>
+    <text class="body" x="936" y="482">协调 Monitor 与 Store</text>
+    <text class="body" x="936" y="516">去重、裁剪、搜索、收藏</text>
+    <text class="body" x="936" y="550">回写剪贴板 / 纯文本粘贴</text>
+    <rect x="936" y="400" width="54" height="6" rx="3" fill="#0284c7"/>
+  </g>
+
+  <g>
+    <rect class="card" x="1302" y="260" width="170" height="210" rx="20" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text class="label" x="1330" y="314">SwiftUI UI</text>
+    <text class="small" x="1330" y="356">ClipboardHistoryView</text>
+    <text class="small" x="1330" y="386">ClipboardItemRow</text>
+    <text class="small" x="1330" y="416">SettingsView</text>
+    <rect x="1330" y="278" width="54" height="6" rx="3" fill="#7c3aed"/>
+  </g>
+
+  <g>
+    <rect class="card" x="1302" y="590" width="170" height="190" rx="20" fill="#fefce8" stroke="#fde047"/>
+    <text class="label" x="1330" y="646">Core Data</text>
+    <text class="small" x="1330" y="688">SQLite 本地库</text>
+    <text class="small" x="1330" y="718">文本 / 图片 / 文件 URL</text>
+    <rect x="1330" y="608" width="54" height="6" rx="3" fill="#ca8a04"/>
+  </g>
+
+  <g>
+    <rect class="soft" x="904" y="690" width="332" height="110" rx="18" fill="#fff1f2" stroke="#fda4af"/>
+    <text class="label" x="936" y="735">DirectPasteService</text>
+    <text class="small" x="936" y="770">恢复原应用并发送 Cmd+V</text>
+  </g>
+
+  <g>
+    <rect class="soft" x="492" y="825" width="745" height="54" rx="16" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text class="chip" x="526" y="858">AppSettings：历史数量 / 保存时间 / 最大占用 / 黑名单应用 / 纯文本粘贴</text>
+  </g>
+
+  <path class="arrow-green" d="M262 470 C262 540, 430 620, 492 650"/>
+  <path class="arrow-green" d="M827 685 C864 676, 876 564, 902 520"/>
+  <path class="arrow-green" d="M1237 540 C1268 584, 1272 660, 1302 685"/>
+  <path class="arrow-blue" d="M412 350 C438 350, 454 350, 492 350"/>
+  <path class="arrow-blue" d="M827 372 C850 384, 876 406, 902 438"/>
+  <path class="arrow-blue" d="M1237 454 C1262 410, 1274 360, 1302 340"/>
+  <path class="arrow-orange" d="M412 665 C560 830, 766 830, 904 742"/>
+  <path class="arrow-orange" d="M1070 690 C1016 636, 954 610, 944 558"/>
+  <path class="thin-orange" d="M904 744 C700 830, 480 792, 260 772"/>
+  <path class="thin-blue" d="M1130 382 C1112 300, 970 264, 827 322"/>
+
+  <g>
+    <rect x="474" y="530" width="236" height="42" rx="21" fill="#dcfce7" stroke="#86efac"/>
+    <text class="chip" x="508" y="557">采集：text / image / file URL</text>
+  </g>
+  <g>
+    <rect x="864" y="318" width="254" height="42" rx="21" fill="#dbeafe" stroke="#93c5fd"/>
+    <text class="chip" x="900" y="345">UI 的单一数据入口</text>
+  </g>
+  <g>
+    <rect x="1218" y="512" width="242" height="42" rx="21" fill="#fef3c7" stroke="#fcd34d"/>
+    <text class="chip" x="1252" y="539">本地持久化与淘汰策略</text>
+  </g>
+
+  <g>
+    <text class="section-title" x="120" y="850">核心链路</text>
+    <text class="body" x="120" y="887">系统剪贴板 → Monitor 事件 → Manager 协调 → Store 持久化 → SwiftUI 刷新 → DirectPaste 回到原应用</text>
+  </g>
+</svg>

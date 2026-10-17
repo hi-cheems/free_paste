@@ -1,0 +1,50 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.claude/
+
+# Xcode user state
+*.xcuserstate
+xcuserdata/
+
+# Build
+DerivedData/
+.deriveddata/
+.deriveddata-*/
+build/
+*.app/
+*.dmg
+scripts/.FreePaste-dmg.*/
+*.xcarchive/
+*.xcresult/
+*.dSYM/
+
+# Local signing and credentials
+*.local.xcconfig
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.p12
+*.pfx
+*.p8
+*.pem
+*.key
+*.cer
+*.crt
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+
+# Clipboard data and local diagnostics
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.log
+
+# Swift Package Manager
+.build/
+.swiftpm/

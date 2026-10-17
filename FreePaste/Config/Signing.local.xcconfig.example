@@ -1,0 +1,3 @@
+// Copy to Signing.local.xcconfig and replace the placeholder with your own Team ID.
+// Keep certificates, private keys, and notarization credentials out of this file.
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
